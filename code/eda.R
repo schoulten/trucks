@@ -150,17 +150,26 @@ vars_unit_root <- df_trucks %>%
 vars_unit_root
 diffs_trucks <- vars_unit_root$ndiffs[vars_unit_root$variable == "trucks"]
 
+# Apply STL decomposition to determine number of seasonal differences
+# required for a series be stationary
+diffs_trucks_seas <- feasts::unitroot_nsdiffs(df_trucks$trucks)
+diffs_trucks_seas
+
 
 
 # Autocorrelation ---------------------------------------------------------
 
 # ACF and PACF correlograms
 plot_correlograms <- feasts::gg_tsdisplay(
-  data = df_trucks_ts,
-  y    = if (diffs_trucks == 0) {
+  data      = df_trucks_ts,
+  plot_type = "partial",
+  y         = if (diffs_trucks == 0 && diffs_trucks_seas == 0) {
     trucks
-    } else tsibble::difference(trucks, differences = diffs_trucks),
-  plot_type = "partial"
+    } else if (diffs_trucks > 0 && diffs_trucks_seas == 0) {
+      tsibble::difference(trucks, differences = diffs_trucks)
+      } else if (diffs_trucks == 0 && diffs_trucks_seas > 0) {
+        tsibble::difference(trucks, differences = diffs_trucks_seas, lag = 12)
+      }
   ) +
   ggplot2::labs(title = "ACF and PACF correlograms")
 plot_correlograms
