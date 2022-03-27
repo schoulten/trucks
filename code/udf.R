@@ -1,3 +1,7 @@
+# This script centralizes some user defined functions
+
+
+
 #' Count the number of missing values
 #'
 #' Function to count the number of missing values in the columns of a data frame.
