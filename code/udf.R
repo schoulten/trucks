@@ -89,6 +89,169 @@ report_ndiffs <- function(x, na_rm = TRUE, ...){
 }
 
 
+
+# Function to deseasonalize monthly data using X-13-ARIMA-SEATS
+# x = série a ser ajustada sazonalmente
+# first_date = data de início da série (formato "YYYY-MM-DD")
+
+
+#' X-13ARIMA-SEATS Seasonal Adjustment
+#'
+#' @param x Numerical vector of the time series.
+#' @param date_col year-month (tsibble::yearmonth) vector.
+#'
+#' @return Numerical vector of the seasonally adjusted time series, if it was possible to fit a model, else NULL.
+x13_adjust <- function(x, date_col){
+
+  # Prepare tsibble object
+  x13_fit <- tsibble::tsibble(
+    date  = date_col,
+    value = x,
+    index = date
+    ) %>%
+    fabletools::model(x13 = feasts::X_13ARIMA_SEATS(value), .safely = TRUE)
+
+  if (
+    # Return original data if generated null model
+    fabletools::is_null_model(x13_fit[[1]][[1]][["fit"]]) ||
+
+    # Return original data if generated model without fit
+    is.null(x13_fit[[1]][[1]][["fit"]][["fit"]]) ||
+
+    # Return original data if seasonality is zero
+    !all(x13_fit[[1]][[1]][["fit"]][["fit"]][["data"]][,"seasonal"] != 0L)
+    ) {
+
+    warning(
+      paste0(
+        "Unable to perform X-13ARIMA-SEATS Seasonal Adjustment for variable ",
+        dplyr::cur_column(),
+        ", returning NULL."
+        ),
+      call. = FALSE
+      )
+    return(NULL)
+
+    } else {
+
+    return(
+      x13_fit %>%
+        fabletools::components() %>%
+        dplyr::as_tibble() %>%
+        dplyr::pull(season_adjust)
+      )
+
+  }
+}
+
+
+
+#' VECM: estimates model with cross-validation and reports accuracy by forecast horizon
+#'
+#' @param data A data frame
+#' @param y_target Column name of the variable of interest (used to report accuracy)
+#' @param date_col Date class column name
+#' @param lags Number of lags (see tsDyn::VECM)
+#' @param rank Number of cointegrating relationships (see tsDyn::VECM)
+#' @param init_window Number of initial observations to be used in the first cross-validation subsample
+#' @param step A positive integer for incremental step (see tsibble::stretch_tsibble)
+#' @param horizon Forecast horizon
+#' @param ... Additional arguments to tsDyn::VECM
+#'
+#' @return A list with 3 elements: a tibble with the RMSE per forecast horizon; a list with prediction points in each cross-validation subsample; and the original observed data.
+get_cv_rmse_vecm <- function (
+  data,
+  y_target,
+  date_col,
+  lags        = 3,
+  rank        = 1,
+  init_window = 180,
+  step        = 3,
+  horizon     = 18,
+  ...
+  ) {
+
+  cv_train_index <- data %>%
+    dplyr::slice(1:(dplyr::n() - horizon)) %>%
+    nrow() %>%
+    seq_len() %>%
+    tsibble:::stretcher2(.step = step, .init = init_window)
+
+  n_fcst <- length(cv_train_index)
+
+  point_fcst <- list()
+
+  for (i in seq_len(n_fcst)) {
+
+    cat(paste0("\n\nIteration: ", i, "/", n_fcst, "\n\n"))
+
+    curr_index <- cv_train_index[[i]]
+    fit_index <- curr_index[1:(length(curr_index) - (lags + 1))]
+    test_index <- seq.int(
+      from       = max(fit_index) + 1,
+      by         = 1,
+      length.out = lags + 1
+      )
+
+    data_train <- data[curr_index, ]
+    data_test <- data[test_index, ]
+
+    fit_vecm <- tsDyn::VECM(
+      data    = dplyr::select(data_train, -dplyr::all_of(date_col)),
+      lag     = lags,
+      r       = rank,
+      ...
+      )
+
+    fcsts <- as.vector(
+      predict(
+        fit_vecm,
+        newdata = dplyr::select(data_test, -dplyr::all_of(date_col)),
+        n.ahead = horizon
+        )[, y_target]
+      )
+
+    point_fcst[[i]] <- dplyr::tibble(
+      {{ date_col }} := seq.Date(
+        from       = min(dplyr::pull(data_test, {{ date_col }})),
+        by         = "month",
+        length.out = length(fcsts)
+        ),
+      fcst = fcsts
+      )
+
+    }
+
+  data_y <- dplyr::tibble(
+    {{ date_col }} := dplyr::pull(data, {{ date_col }}),
+    {{ y_target }} := dplyr::pull(data, {{ y_target }})
+    )
+
+  rmse_tbl <- dplyr::left_join(
+    dplyr::bind_rows(point_fcst, .id = ".id"),
+    data_y,
+    by = "date"
+    ) %>%
+    dplyr::group_by(.id) %>%
+    dplyr::mutate(h = dplyr::row_number()) %>%
+    dplyr::group_by(h) %>%
+    dplyr::summarise(
+      rmse = sqrt(mean((!!rlang::sym(y_target) - fcst)^2, na.rm = TRUE)),
+      .groups = "drop"
+      )
+
+  return(
+    list(
+      "rmse"     = rmse_tbl,
+      "forecast" = purrr::set_names(point_fcst, paste0("id", 1:n_fcst)),
+      "actual"   = data_y
+      )
+    )
+
+}
+
+
+
 #' Default theme customization for ggplot2 plots
 #'
 #' @return ggplot2 theme
