@@ -1,0 +1,125 @@
+---
+title: "Dashboard: Trucks Sold Forecast Model"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: column
+    vertical_layout: fill
+    source_code: NULL
+    logo: docs/logo.png
+    social: menu
+    navbar:
+        - { icon: "fa-github", href: "https://github.com/schoulten", align: right }
+        - { icon: "fa-linkedin", href: "https://www.linkedin.com/in/schoulten/", align: right }
+        - { icon: "fa-at", href: "mailto:fernando@fortietwo.com", align: right }
+---
+
+<script>
+$('.navbar-logo').wrap('<a href="https://fortietwo.com/" target=_blank>');
+</script>
+
+<style>                     
+.navbar {
+  background-color:#282f6b;
+}
+.navbar-inverse .navbar-nav > li > a:hover,
+.navbar-inverse .navbar-nav > li > a:focus {
+  color: #ffffff;
+    background-color: #ffffff21;
+}
+.navbar-inverse .navbar-nav > .active > a,
+.navbar-inverse .navbar-nav > .active > a:hover,
+.navbar-inverse .navbar-nav > .active > a:focus {
+  color: #ffffff;
+    background-color: #ffffff21;
+}
+.navbar-inverse .navbar-toggle:hover,
+.navbar-inverse .navbar-toggle:focus {
+  background-color: #ffffff21;
+}
+.navbar-inverse .navbar-nav > .open > a,
+.navbar-inverse .navbar-nav > .open > a:hover,
+.navbar-inverse .navbar-nav > .open > a:focus {
+  background-color: #ffffff21;
+    color: #ffffff;
+}
+.dropdown-menu > li > a:hover,
+.dropdown-menu > li > a:focus {
+  text-decoration: none;
+  color: #ffffff;
+    background-color: #282f6b;
+}
+.dropdown-menu > .active > a,
+.dropdown-menu > .active > a:hover,
+.dropdown-menu > .active > a:focus {
+  color: #ffffff;
+    text-decoration: none;
+  outline: 0;
+  background-color: #282f6b;
+}
+.nav-tabs-custom > .nav-tabs > li.active {
+  border-top-color: #282f6b;
+}
+</style>
+
+```{r global, include=FALSE, message=FALSE, warning=FALSE}
+knitr::opts_knit$set(progress = TRUE)
+knitr::opts_chunk$set(warning = FALSE, message = FALSE, echo = FALSE)
+```
+
+
+
+Overview
+=====================================
+
+
+Column {data-width=600}
+-------------------------------------
+
+### Fanchart {.no-title}
+
+```{r fanchart, fig.width=9.5}
+plot_fanchart
+```
+
+### Accuracy {.no-title}
+
+```{r accuracy, fig.width=9.5}
+plt_rmse
+```
+
+
+Column
+-------------------------------------
+
+### Point forecast {.no-title}
+
+```{r points}
+frcst_dt
+```
+
+
+### Accuracy metrics {.no-title}
+
+```{r metrics}
+acc_dt
+```
+
+
+
+Trucks Sold Forecast Model {.sidebar data-width=250}
+=====================================
+
+#### **Trucks Sold Forecast Model**
+This dashboard shows the **key results of forecast models** for the Number of Trucks Sold, through time series econometric models using the `R` language.
+
+**About the workflow**:
+
+1) Data processing (ETL)<br>
+2) Exploratory Data Analysis (EDA)<br>
+3) Modeling with a cross-validation scheme<br>
+4) Automated final model choice<br>
+5) Refit and diagnostics with full sample<br>
+6) Out-of-sample forecasts<br>
+
+
+**Last update**: `r Sys.Date()`.
