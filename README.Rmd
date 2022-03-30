@@ -23,7 +23,7 @@ Code for replicating econometric forecast models of time series for the variable
 - `data`: folder with input and output data;
 - `docs`: general and documentation files (work in progress).
 
-You can check a summary of the main results through the dashboard: [fortietwo.com/trucks/](fortietwo.com/trucks/)
+You can check a summary of the main results through the dashboard: [https://fortietwo.com/trucks/](https://fortietwo.com/trucks/)
 
 ![](docs/printscreen.PNG)
 

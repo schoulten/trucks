@@ -18,7 +18,7 @@ factors.
 -   `docs`: general and documentation files (work in progress).
 
 You can check a summary of the main results through the dashboard:
-[fortietwo.com/trucks/](fortietwo.com/trucks/)
+<https://fortietwo.com/trucks/>
 
 ![](docs/printscreen.PNG)
 
